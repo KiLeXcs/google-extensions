@@ -144,15 +144,17 @@ function showTradeStats(avgPrice, minPrice, maxPrice, avgInterval, frequencyColo
 function createPriceChart(salesData, avgPrice) {
   if (salesData.length === 0) return '';
   
-  const sortedData = salesData.slice().sort(function(a, b) {
-    return a.date.localeCompare(b.date);
-  });
+  // НЕ сортируем по дате, а сохраняем порядок из таблицы
+  // Таблица идет от новых к старым (сверху вниз), 
+  // а нам нужно для графика от старых к новым (слева направо)
+  const chartData = salesData.slice().reverse();
   
-  const chartData = sortedData.slice(-10);
+  // Берем последние 10 записей
+  const recentData = chartData.slice(-10);
   
-  if (chartData.length < 2) return '';
+  if (recentData.length < 2) return '';
   
-  const prices = chartData.map(function(d) { return d.price; });
+  const prices = recentData.map(function(d) { return d.price; });
   const minPrice = Math.min.apply(null, prices);
   const maxPrice = Math.max.apply(null, prices);
   const priceRange = maxPrice - minPrice || 1;
@@ -167,24 +169,23 @@ function createPriceChart(salesData, avgPrice) {
   const chartWidth = width - paddingLeft - paddingRight;
   const chartHeight = height - paddingTop - paddingBottom;
   
+  // Равномерное распределение точек
   let points = '';
-  chartData.forEach(function(item, i) {
-    const x = paddingLeft + (i / (chartData.length - 1)) * chartWidth;
+  recentData.forEach(function(item, i) {
+    const x = paddingLeft + (i / (recentData.length - 1)) * chartWidth;
     const y = paddingTop + chartHeight - ((item.price - minPrice) / priceRange) * chartHeight;
     points += x + ',' + y + ' ';
   });
   
   const avgY = paddingTop + chartHeight - ((avgPrice - minPrice) / priceRange) * chartHeight;
   
-  // Создаём точки с разными цветами для Sale и Supply
+  // Точки с цветами
   let dotsHTML = '';
-  chartData.forEach(function(item, i) {
-    const x = paddingLeft + (i / (chartData.length - 1)) * chartWidth;
+  recentData.forEach(function(item, i) {
+    const x = paddingLeft + (i / (recentData.length - 1)) * chartWidth;
     const y = paddingTop + chartHeight - ((item.price - minPrice) / priceRange) * chartHeight;
     
-    // Supply - жёлтый, Sale - зелёный, остальное - синий
     const dotColor = item.type === 'Supply' ? '#E25825' : (item.type === 'Sale' ? '#74B72E' : '#2196F3');
-
     dotsHTML += '<circle cx="' + x + '" cy="' + y + '" r="3" fill="' + dotColor + '"/>';
   });
   
