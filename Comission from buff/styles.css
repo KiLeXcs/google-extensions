@@ -1,0 +1,16 @@
+.buff-price-calculated {
+  margin-left: 8px;
+  padding: 2px 6px;
+  background: #e8f5e9;
+  color: #2e7d32;
+  font-size: 12px;
+  font-weight: bold;
+  border-radius: 3px;
+  white-space: nowrap;
+  display: inline-block;
+}
+
+.buff-price-calculated:hover {
+  background: #c8e6c9;
+  cursor: default;
+}

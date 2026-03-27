@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "BUFF Price Calculator -2.5%",
+  "version": "1.0",
+  "description": "Shows price minus 2.5% commission on BUFF.163.com",
+  "content_scripts": [
+    {
+      "matches": ["*://buff.163.com/*"],
+      "js": ["content.js"],
+      "css": ["styles.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "permissions": []
+}
