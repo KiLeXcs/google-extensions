@@ -38,12 +38,16 @@ function analyzeTradeHistory() {
     const priceMatch = text.match(/¥\s*([\d.]+)/);
     const dateMatch = text.match(/(\d{4}-\d{2}-\d{2})/);
     
+    // Ищем тип операции (Sale или Supply)
+    const typeMatch = text.match(/\b(Sale|Supply)\b/);
+    const type = typeMatch ? typeMatch[1] : 'Sale';
+    
     if (priceMatch && dateMatch) {
       const price = parseFloat(priceMatch[1]);
       const date = dateMatch[1];
       if (price > 0 && price < 100000) {
         prices.push(price);
-        salesData.push({date: date, price: price});
+        salesData.push({date: date, price: price, type: type});
       }
     }
     
@@ -172,42 +176,55 @@ function createPriceChart(salesData, avgPrice) {
   
   const avgY = paddingTop + chartHeight - ((avgPrice - minPrice) / priceRange) * chartHeight;
   
-return '<div style="background: rgba(0,0,0,0.25); padding: 8px; border-radius: 6px; margin-bottom: 8px;">' +
-  '<div style="color: #8b92a8; font-size: 11px; margin-bottom: 6px;"><strong>📈 Price Chart:</strong></div>' +
-  '<svg width="' + width + '" height="' + height + '" style="background: transparent; border-radius: 4px; display: block;">' +
-  '<line x1="' + paddingLeft + '" y1="' + avgY + '" x2="' + (width-paddingRight) + '" y2="' + avgY + '" stroke="#4CAF50" stroke-width="2" stroke-dasharray="5,3"/>' +
-  '<polyline points="' + points + '" fill="none" stroke="#2196F3" stroke-width="2"/>' +
-  chartData.map(function(item, i) {
+  // Создаём точки с разными цветами для Sale и Supply
+  let dotsHTML = '';
+  chartData.forEach(function(item, i) {
     const x = paddingLeft + (i / (chartData.length - 1)) * chartWidth;
     const y = paddingTop + chartHeight - ((item.price - minPrice) / priceRange) * chartHeight;
-    return '<circle cx="' + x + '" cy="' + y + '" r="3" fill="#2196F3"/>';
-  }).join('') +
-  '<text x="' + (paddingLeft - 5) + '" y="' + (paddingTop + 3) + '" text-anchor="end" font-size="9" fill="#8b92a8">¥' + maxPrice.toFixed(0) + '</text>' +
-  '<text x="' + (paddingLeft - 5) + '" y="' + (height - paddingBottom + 5) + '" text-anchor="end" font-size="9" fill="#8b92a8">¥' + minPrice.toFixed(0) + '</text>' +
-  '<text x="' + (paddingLeft - 5) + '" y="' + (avgY + 3) + '" text-anchor="end" font-size="9" fill="#4CAF50" font-weight="bold">¥' + parseFloat(avgPrice).toFixed(0) + '</text>' +
-  '</svg></div>';
+    
+    // Supply - жёлтый, Sale - зелёный, остальное - синий
+    const dotColor = item.type === 'Supply' ? '#E25825' : (item.type === 'Sale' ? '#74B72E' : '#2196F3');
+
+    dotsHTML += '<circle cx="' + x + '" cy="' + y + '" r="3" fill="' + dotColor + '"/>';
+  });
+  
+  return '<div style="background: rgba(0,0,0,0.25); padding: 8px; border-radius: 6px; margin-bottom: 8px;">' +
+    '<div style="color: #8b92a8; font-size: 11px; margin-bottom: 6px;"><strong>📈 Price Chart:</strong></div>' +
+    '<svg width="' + width + '" height="' + height + '" style="background: transparent; border-radius: 4px; display: block;">' +
+    '<line x1="' + paddingLeft + '" y1="' + avgY + '" x2="' + (width-paddingRight) + '" y2="' + avgY + '" stroke="#4CAF50" stroke-width="2" stroke-dasharray="5,3"/>' +
+    '<polyline points="' + points + '" fill="none" stroke="#2196F3" stroke-width="2"/>' +
+    dotsHTML +
+    '<text x="' + (paddingLeft - 5) + '" y="' + (paddingTop + 3) + '" text-anchor="end" font-size="9" fill="#8b92a8">¥' + maxPrice.toFixed(0) + '</text>' +
+    '<text x="' + (paddingLeft - 5) + '" y="' + (height - paddingBottom + 5) + '" text-anchor="end" font-size="9" fill="#8b92a8">¥' + minPrice.toFixed(0) + '</text>' +
+    '<text x="' + (paddingLeft - 5) + '" y="' + (avgY + 3) + '" text-anchor="end" font-size="9" fill="#4CAF50" font-weight="bold">¥' + parseFloat(avgPrice).toFixed(0) + '</text>' +
+    '</svg></div>';
 }
 
 function processPrices() {
+  processedTDs.clear();
+  
   const priceCells = document.querySelectorAll('tbody tr td:nth-child(5)');
   priceCells.forEach(function(td) {
     const tdId = td.parentNode.rowIndex + '-' + td.cellIndex;
-    if (processedTDs.has(tdId)) return;
+    
+    const existing = td.querySelector('.buff-calc-price-final');
+    if (existing) {
+      processedTDs.add(tdId);
+      return;
+    }
+    
     const text = td.textContent.trim();
     const match = text.match(/¥\s*([\d.,]+)/);
     if (match) {
       const price = parseFloat(match[1].replace(',', '.'));
       if (price > 0) {
         const calculated = calculatePrice(price);
-        const existing = td.querySelector('.buff-calc-price-final');
-        if (existing) {
-          processedTDs.add(tdId);
-          return;
-        }
+        
         const span = document.createElement('span');
         span.className = 'buff-calc-price-final';
         span.textContent = '(¥ ' + calculated.toFixed(2) + ')';
         span.style.cssText = 'color:#2e7d32;font-size:14px;margin-left:0px;white-space:nowrap;font-weight:700;';
+        
         td.appendChild(span);
         processedTDs.add(tdId);
       }
