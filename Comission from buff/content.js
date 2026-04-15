@@ -7,7 +7,7 @@ if (!window.location.pathname.includes('/goods/')) {
 const processedTDs = new Set();
 
 function calculatePrice(price) {
-  const calculated = price * 0.975;
+  const calculated = price * 0.985;
   return Math.floor(calculated * 100) / 100;
 }
 
